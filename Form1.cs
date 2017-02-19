@@ -12,9 +12,10 @@ namespace Outlook_Sample
 {
     public partial class Form1 : Form
     {
-        List<Schedule> scheduleList = new List<Schedule>();
+        List<AppointmentItem> scheduleList = new List<AppointmentItem>();
 
-        DateTime meetingTime;     // 会議時間
+        DateTime meetingTime;     // 会議開始時刻
+        DateTime alarmTime;       // アラーム発生時刻
         DateTime nowTimerTime;    // タイマ現在時刻
 
         public Form1()
@@ -24,16 +25,12 @@ namespace Outlook_Sample
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            comboBox1.Items.Add("本日の予定");
-            comboBox1.Items.Add("本日から7日間の予定");
-            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBox2.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBoxItemAppointment.DropDownStyle = ComboBoxStyle.DropDownList;
 
-            button2.Enabled = false;
-            button3.Enabled = false;
+            btnTimerStart.Enabled = false;
+            btnTimerRelease.Enabled = false;
 
-            meetingTimeTextBox.ReadOnly = true;
-            remainTimeTextBox.ReadOnly = true;
+            radioButton2.Checked = true;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -47,128 +44,111 @@ namespace Outlook_Sample
             NameSpace ns = outlook.GetNamespace("MAPI");
             MAPIFolder oFolder = ns.GetDefaultFolder(OlDefaultFolders.olFolderCalendar);
 
-
-            DateTime dt = DateTime.Today;
-
-            string startDate;
-            string endDate;
-
-            if (comboBox1.Text == "本日の予定")
-            {
-                startDate = dt.ToString("yy/MM/dd");
-                endDate = startDate;
-            } else if(comboBox1.Text == "本日から7日間の予定")
-            {
-                startDate = dt.ToString("yy/MM/dd");
-                endDate = dt.AddDays(7).ToString("yy/MM/dd");
-            } else
-            {
-                startDate = dt.ToString("yy/MM/dd");
-                endDate = startDate;
-            }
-
-            string filter = "[Start] >= '" + startDate + "' AND [Start] <= '" + endDate + "'";
-
-            //開始日、終了日の間の予定で絞り込むとき
-            //string filter = "[Start] >= '" + startDate + "' AND [Start] <= '" + endDate + "'";
-            //予定の題名を「元旦」で絞り込む場合
-
-            //string filter = "[Subject] = '元日'"; 
-
-            //終日の予定で絞り込む場合
-            //string filter = "[AllDayEvent] = True";
-
-            Items oItems = oFolder.Items.Restrict(filter);
-
-            textBox1.Text += oFolder.Name + "\r\n";
+            Items oItems = oFolder.Items;
 
             AppointmentItem oAppoint = oItems.GetFirst();
             while (oAppoint != null)
             {
-                textBox1.Text += oAppoint.Subject + "\r\n";
-                textBox1.Text += oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "\r\n";
-                textBox1.Text += oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "\r\n";
-                textBox1.Text += "---\r\n";
-                Schedule schedule = new Schedule(oAppoint.Subject, oAppoint.Start, oAppoint.End);
+                StringBuilder sb = new StringBuilder();
+
+                // 定期的な予定 : IsRecurring
+
+                if (oAppoint.IsRecurring)
+                {
+                    sb.Append("[複] ");
+                }
+                else
+                {
+                    sb.Append("[単] ");
+                }
+
+                sb.Append(" ["+oAppoint.Subject+"]");
+                sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                sb.Append("\r\n");
+
+                textBox1.Text += sb.ToString();
+
+                scheduleList.Add(oAppoint);
                 oAppoint = oItems.GetNext();
 
-                scheduleList.Add(schedule);
             }
         }
 
-
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        // 予定コンボボックスのイベントハンドラ
+        private void comboBoxItemAppointment_DropDown(object sender, EventArgs e)
         {
+            btnTimerStart.Enabled = false;
+            comboBoxItemAppointment.Items.Clear();
 
-        }
-
-
-        private void comboBox2_DropDown(object sender, EventArgs e)
-        {
-            comboBox2.Items.Clear();
-
-            foreach (var list in scheduleList)
+            foreach (var item in scheduleList)
             {
-                comboBox2.Items.Add(list.subject);
+                string isRecurringState;
+
+                if (item.IsRecurring)
+                {
+                    isRecurringState = "[複] ";
+                }
+                else
+                {
+                    isRecurringState = "[単] ";
+                }
+
+                comboBoxItemAppointment.Items.Add(isRecurringState + item.Subject + " " + item.Start.ToString("yyyy/MM/dd hh:mm:ss"));
             }
         }
 
-
-        private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
+        // 予定コンボボックスのイベントハンドラ
+        private void comboBoxItemAppointment_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string currentComboString;
+            btnTimerStart.Enabled = false;
 
-            textBox2.Clear();
-
-            if (comboBox2.SelectedIndex != -1)
+            if (comboBoxItemAppointment.SelectedIndex != -1)
             {
-                currentComboString = comboBox2.Items[comboBox2.SelectedIndex].ToString();   // 現在のコンボボックスの文字列を保存
+                int listIndex = 0;
 
                 foreach (var list in scheduleList){
-                    if(list.subject == currentComboString)
-                    {
-                        textBox2.Text += list.subject + "\r\n";
-                        textBox2.Text += list.start.ToString("yyyy/MM/dd hh:mm:ss") + "\r\n";
-                        textBox2.Text += list.end.ToString("yyyy/MM/dd hh:mm:ss") + "\r\n";
 
-                        if (list.start > System.DateTime.Now)
+                    if (list.Start > System.DateTime.Now && comboBoxItemAppointment.SelectedIndex == listIndex)
+                    {
+                        btnTimerStart.Enabled = true;
+
+                        string isRecurringState;
+
+                        if (list.IsRecurring)
                         {
-                            button2.Enabled = true;
-                            meetingTimeTextBox.Text = list.end.ToString("yyyy/MM/dd hh:mm:ss");
-                            meetingTime = list.start;
+                            isRecurringState = "[複]";
                         }
+                        else
+                        {
+                            isRecurringState = "[単]";
+                        }
+
+                        textBoxSelectedAppointment.Text = 
+                            isRecurringState +
+                            " [" + list.Subject + "]" +
+                            " [" + list.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]" +
+                            " [" + list.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]"; 
+
+                        meetingTimeTextBox.Text = list.End.ToString("yyyy/MM/dd hh:mm:ss");
+                        meetingTime = list.Start;
                     }
+                    listIndex++;
                 }
             }
         }
 
         private void timerControl_Tick(object sender, EventArgs e)
         {
-            // 経過時間に1秒を加える
-            nowTimerTime = nowTimerTime.AddSeconds(1);
+            nowTimerTime = nowTimerTime.AddSeconds(1);  // 経過時間に1秒を加える
 
-            TimeSpan ts = meetingTime - nowTimerTime;                       // 会議開始時間と現在時間の差分を求める
+            TimeSpan ts = alarmTime - nowTimerTime;     // 会議開始時間と現在時間の差分を求める
 
-            // 残り時間を表示
-            String tempRemain = ts.ToString();
-            char[] delimiterChars = { '.', ':' };
+            String tempRemain = ts.ToString();          // 残り時間を表示
 
-            string[] words = tempRemain.Split(delimiterChars);
+            String hours = (ts.Hours + ts.Days * 24).ToString();    // 残り日数は、1日当たり24時間として計算して表示する
 
-            int numDays;
-
-            if (!int.TryParse(words[0], out numDays))
-            {
-                numDays = 0;
-            }
-            else
-            {
-                numDays = int.Parse(words[0]);
-            }
-
-            words[1] = (int.Parse(words[1]) + numDays * 24).ToString();     // 残り日数は、1日当たり24時間として計算して表示する
-
-            remainTimeTextBox.Text = words[1] + ":" + words[2] + ":" + words[3];
+            remainAlarmTimeTextBox.Text = hours + "[時間] " + ts.Minutes + "[分] " + ts.Seconds + "[秒]";
 
             if (meetingTime < nowTimerTime)
             {
@@ -178,7 +158,7 @@ namespace Outlook_Sample
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void btnTimerStart_Click(object sender, EventArgs e)
         {
             string MessageBoxTitle = "タイマースタート確認";
             string MessageBoxContent = "タイマーをスタートしてもよろしですか？";
@@ -188,14 +168,32 @@ namespace Outlook_Sample
             {
                 nowTimerTime = System.DateTime.Now;
 
+                // 指定したグループ内のラジオボタンでチェックされている物を取り出す
+                var RadioButtonChecked_InGroup = groupBox1.Controls.OfType<RadioButton>()
+                    .SingleOrDefault(rb => rb.Checked == true);
+
+                if (RadioButtonChecked_InGroup.Text == "5分前に通知")
+                {
+                    // アラーム開始時間を会議開始時間の5分前にする
+                    alarmTime = meetingTime.AddSeconds(-300);
+                }
+                else if (RadioButtonChecked_InGroup.Text == "10分前に通知")
+                {
+                    // アラーム開始時間を会議開始時間の10分前にする
+                    alarmTime = meetingTime.AddSeconds(-600);
+                } else
+                {
+                    // アラーム開始時間を会議開始時間の15分前にする
+                    alarmTime = meetingTime.AddSeconds(-900);
+                }
+                
                 // タイマースタート
                 timerControl.Start();
 
-                button1.Enabled = false;
-                button2.Enabled = false;
-                button3.Enabled = true;
-                comboBox1.Enabled = false;
-                comboBox2.Enabled = false;
+                btnGetSchedule.Enabled = false;
+                btnTimerStart.Enabled = false;
+                btnTimerRelease.Enabled = true;
+                comboBoxItemAppointment.Enabled = false;
             }
             else if (dialogResult == DialogResult.No)
             {
@@ -204,7 +202,7 @@ namespace Outlook_Sample
 
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void btnTimerRelease_Click(object sender, EventArgs e)
         {
             string MessageBoxTitle = "タイマー解除確認";
             string MessageBoxContent = "タイマーを解除してもよろしですか？";
@@ -215,16 +213,22 @@ namespace Outlook_Sample
                 // タイマーストップ
                 timerControl.Stop();
 
-                button1.Enabled = true;
-                button2.Enabled = false;
-                button3.Enabled = false;
-                comboBox1.Enabled = true;
-                comboBox2.Enabled = true;
+                btnGetSchedule.Enabled = true;
+                btnTimerStart.Enabled = false;
+                btnTimerRelease.Enabled = false;
+                comboBoxItemAppointment.Enabled = true;
+
+                comboBoxItemAppointment_SelectedIndexChanged(sender, e);
             }
             else if (dialogResult == DialogResult.No)
             {
                 
             }
+        }
+
+        private void groupBox1_Enter(object sender, EventArgs e)
+        {
+
         }
     }
 }
