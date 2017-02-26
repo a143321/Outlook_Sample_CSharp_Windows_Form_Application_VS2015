@@ -36,27 +36,7 @@ namespace Outlook_Sample
 
             btnTimerStart.Enabled = false;
             btnTimerRelease.Enabled = false;
-
             radioButton2.Checked = true;
-
-
-            // 起動確認デバッグコード //
-            //using (TaskService ts = new TaskService())
-            //{
-            //    // Create a new task
-            //    const string taskName = "Test";
-            //    Task t = ts.AddTask(taskName,
-            //        new TimeTrigger()
-            //        {
-            //            StartBoundary = System.DateTime.Now.AddMinutes(1),
-            //            Enabled = true
-            //        },
-            //        new ExecAction(directory + notifyExeName, null, null));
-
-            //    // Register the task in the root folder
-            //    ts.RootFolder.RegisterTaskDefinition(taskName, t.Definition);
-            //}
-            // 起動確認デバッグコード//
 
         }
 
@@ -233,7 +213,12 @@ namespace Outlook_Sample
                 btnTimerRelease.Enabled = true;
                 comboBoxItemAppointment.Enabled = false;
 
-                registerTaskScheduler(alarmTime);
+                //文字を置換する（「に」を「2」に置換する）
+                string taskName = comboBoxItemAppointment.SelectedItem.ToString();
+                taskName = taskName.Replace('/', '_');
+                taskName = taskName.Replace(':', '_');
+
+                registerTaskScheduler(taskName, alarmTime);
             }
             else if (dialogResult == DialogResult.No)
             {
@@ -272,12 +257,11 @@ namespace Outlook_Sample
         }
 
         // Microsoft.Win32.TaskSchedulerのDLLを使用して、タスクスケジューラーに登録する
-        private void registerTaskScheduler(DateTime triggerTime)
+        private void registerTaskScheduler(string taskName, DateTime triggerTime)
         {
             using (TaskService ts = new TaskService())
             {
                 // Create a new task
-                const string taskName = "Test";
                 Task t = ts.AddTask(taskName,
                     new TimeTrigger()
                     {
