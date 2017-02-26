@@ -5,6 +5,11 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Outlook_Sample", "Outlook_Sample.csproj", "{C4ED5C5C-4997-41CD-9AC3-51F0491AB1A9}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{33D51129-2027-4E66-AF4B-370C844C69C7}"
+	ProjectSection(SolutionItems) = preProject
+		Microsoft.Win32.TaskScheduler.dll = Microsoft.Win32.TaskScheduler.dll
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

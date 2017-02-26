@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Microsoft.Office.Interop.Outlook;
+using Microsoft.Win32.TaskScheduler;
 
 namespace Outlook_Sample
 {
@@ -172,7 +173,7 @@ namespace Outlook_Sample
         private void btnTimerStart_Click(object sender, EventArgs e)
         {
             string MessageBoxTitle = "タイマースタート確認";
-            string MessageBoxContent = "タイマーをスタートしてもよろしですか？";
+            string MessageBoxContent = "タイマーをスタートしてもよろしですか？\r\nなお、Windowsタスクスケジュラーにも同時とうろくされます。";
 
             DialogResult dialogResult = MessageBox.Show(MessageBoxContent, MessageBoxTitle, MessageBoxButtons.YesNo);
             if (dialogResult == DialogResult.Yes)
@@ -205,6 +206,8 @@ namespace Outlook_Sample
                 btnTimerStart.Enabled = false;
                 btnTimerRelease.Enabled = true;
                 comboBoxItemAppointment.Enabled = false;
+
+                registerTaskScheduler(alarmTime);
             }
             else if (dialogResult == DialogResult.No)
             {
@@ -240,6 +243,26 @@ namespace Outlook_Sample
         private void groupBox1_Enter(object sender, EventArgs e)
         {
 
+        }
+
+        // Microsoft.Win32.TaskSchedulerのDLLを使用して、タスクスケジューラーに登録する
+        private void registerTaskScheduler(DateTime triggerTime)
+        {
+            using (TaskService ts = new TaskService())
+            {
+                // Create a new task
+                const string taskName = "Test";
+                Task t = ts.AddTask(taskName,
+                    new TimeTrigger()
+                    {
+                        StartBoundary = triggerTime,
+                        Enabled = true
+                    },
+                    new ExecAction("NotifyMeeting.exe", null, null));
+
+                // Register the task in the root folder
+                ts.RootFolder.RegisterTaskDefinition(taskName, t.Definition);
+            }
         }
     }
 }
