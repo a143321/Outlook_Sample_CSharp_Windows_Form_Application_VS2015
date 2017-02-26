@@ -44,34 +44,45 @@ namespace Outlook_Sample
             NameSpace ns = outlook.GetNamespace("MAPI");
             MAPIFolder oFolder = ns.GetDefaultFolder(OlDefaultFolders.olFolderCalendar);
 
-            Items oItems = oFolder.Items;
+            DateTime today = DateTime.Today;
+            DateTime endDay = new DateTime(2099, 1, 1, 0, 0, 0);
+            // Initial restriction is Jet query for date range
+            string filter1 = "[Start] >= '" + today.ToString("g") + "' AND [End] <= '" + endDay.ToString("g") + "'";
 
-            AppointmentItem oAppoint = oItems.GetFirst();
+            Items calendarItems = oFolder.Items;
+            calendarItems.IncludeRecurrences = true;
+            Items calendarItemsRestricted = calendarItems.Restrict(filter1);
+            calendarItemsRestricted.Sort("[Start]", false);
+
+            AppointmentItem oAppoint = calendarItemsRestricted.GetFirst();
             while (oAppoint != null)
             {
                 StringBuilder sb = new StringBuilder();
 
-                // 定期的な予定 : IsRecurring
-
                 if (oAppoint.IsRecurring)
                 {
+
                     sb.Append("[複] ");
+                    sb.Append(" [" + oAppoint.Subject + "]");
+                    sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                    sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                    sb.Append("\r\n");
+                    textBox1.Text += sb.ToString();
+                    scheduleList.Add(oAppoint);
                 }
                 else
                 {
                     sb.Append("[単] ");
+                    sb.Append(" [" + oAppoint.Subject + "]");
+                    sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                    sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                    sb.Append("\r\n");
+
+                    textBox1.Text += sb.ToString();
+                    scheduleList.Add(oAppoint);
                 }
 
-                sb.Append(" ["+oAppoint.Subject+"]");
-                sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                sb.Append("\r\n");
-
-                textBox1.Text += sb.ToString();
-
-                scheduleList.Add(oAppoint);
-                oAppoint = oItems.GetNext();
-
+                oAppoint = calendarItemsRestricted.GetNext();
             }
         }
 
