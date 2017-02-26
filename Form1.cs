@@ -230,7 +230,7 @@ namespace Outlook_Sample
         private void btnTimerRelease_Click(object sender, EventArgs e)
         {
             string MessageBoxTitle = "タイマー解除確認";
-            string MessageBoxContent = "タイマーを解除してもよろしですか？";
+            string MessageBoxContent = "本アプリのタイマーを解除してもよろしですか？\r\nなお、Windowsタスクスケジューラーに登録済みのタスクは解除されません。";
 
             DialogResult dialogResult = MessageBox.Show(MessageBoxContent, MessageBoxTitle, MessageBoxButtons.YesNo);
             if (dialogResult == DialogResult.Yes)
