@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{33D51129-2027-4E66-AF4B-370C844C69C7}"
 	ProjectSection(SolutionItems) = preProject
 		Microsoft.Win32.TaskScheduler.dll = Microsoft.Win32.TaskScheduler.dll
+		NotifyMeeting.exe = NotifyMeeting.exe
 	EndProjectSection
 EndProject
 Global

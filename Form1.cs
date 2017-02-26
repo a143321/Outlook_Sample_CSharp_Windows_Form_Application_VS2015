@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -19,6 +20,11 @@ namespace Outlook_Sample
         DateTime alarmTime;       // アラーム発生時刻
         DateTime nowTimerTime;    // タイマ現在時刻
 
+        static Assembly myAssembly = Assembly.GetEntryAssembly();
+        static string path = myAssembly.Location;
+        static string directory = System.IO.Path.GetDirectoryName(path) + "\\";
+        static string notifyExeName = "NotifyMeeting.exe";
+
         public Form1()
         {
             InitializeComponent();
@@ -32,6 +38,26 @@ namespace Outlook_Sample
             btnTimerRelease.Enabled = false;
 
             radioButton2.Checked = true;
+
+
+            // 起動確認デバッグコード //
+            //using (TaskService ts = new TaskService())
+            //{
+            //    // Create a new task
+            //    const string taskName = "Test";
+            //    Task t = ts.AddTask(taskName,
+            //        new TimeTrigger()
+            //        {
+            //            StartBoundary = System.DateTime.Now.AddMinutes(1),
+            //            Enabled = true
+            //        },
+            //        new ExecAction(directory + notifyExeName, null, null));
+
+            //    // Register the task in the root folder
+            //    ts.RootFolder.RegisterTaskDefinition(taskName, t.Definition);
+            //}
+            // 起動確認デバッグコード//
+
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -173,7 +199,7 @@ namespace Outlook_Sample
         private void btnTimerStart_Click(object sender, EventArgs e)
         {
             string MessageBoxTitle = "タイマースタート確認";
-            string MessageBoxContent = "タイマーをスタートしてもよろしですか？\r\nなお、Windowsタスクスケジュラーにも同時とうろくされます。";
+            string MessageBoxContent = "タイマーをスタートしてもよろしですか？\r\nなお、Windowsタスクスケジュラーにも同時に登録され、通知時刻に通知されます。";
 
             DialogResult dialogResult = MessageBox.Show(MessageBoxContent, MessageBoxTitle, MessageBoxButtons.YesNo);
             if (dialogResult == DialogResult.Yes)
@@ -258,7 +284,7 @@ namespace Outlook_Sample
                         StartBoundary = triggerTime,
                         Enabled = true
                     },
-                    new ExecAction("NotifyMeeting.exe", null, null));
+                    new ExecAction(directory + notifyExeName, null, null));
 
                 // Register the task in the root folder
                 ts.RootFolder.RegisterTaskDefinition(taskName, t.Definition);
