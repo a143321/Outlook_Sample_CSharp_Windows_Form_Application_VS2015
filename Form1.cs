@@ -62,20 +62,119 @@ namespace Outlook_Sample
             calendarItemsRestricted.Sort("[Start]", false);
 
             AppointmentItem oAppoint = calendarItemsRestricted.GetFirst();
+
+            
+
             while (oAppoint != null)
             {
                 StringBuilder sb = new StringBuilder();
 
                 if (oAppoint.IsRecurring)
                 {
+                    RecurrencePattern pattern = oAppoint.GetRecurrencePattern();
 
-                    sb.Append("[複] ");
-                    sb.Append(" [" + oAppoint.Subject + "]");
-                    sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                    sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                    sb.Append("\r\n");
-                    textBox1.Text += sb.ToString();
-                    scheduleList.Add(oAppoint);
+                    // DayOfWeekMask が有効かどうか
+                    if (pattern.RecurrenceType == OlRecurrenceType.olRecursWeekly || 
+                        pattern.RecurrenceType == OlRecurrenceType.olRecursMonthNth ||
+                        pattern.RecurrenceType == OlRecurrenceType.olRecursYearNth) {
+
+                        DayOfWeek nowWeekDay = today.DayOfWeek; // 予定の日付の曜日
+
+                        OlDaysOfWeek mask = pattern.DayOfWeekMask;
+
+                        // どの曜日の周期予定かチェックする
+                        // Sunday    = 00000001(1)
+                        // Monday    = 00000010(2)
+                        // Tuesday   = 00000100(4)
+                        // Wednesday = 00001000(8)
+                        // Thursday  = 00010000(16)
+                        // Friday    = 00100000(32)
+                        // Saturday  = 01000000(64)
+                        bool isDaysOfWeekSunday    = (mask & OlDaysOfWeek.olSunday) > 0 ? true : false;    // 日曜日が周期予定
+                        bool isDaysOfWeekMonday    = (mask & OlDaysOfWeek.olMonday) > 0 ? true : false;    // 月曜日が周期予定
+                        bool isDaysOfWeekTuesday   = (mask & OlDaysOfWeek.olTuesday) > 0 ? true : false;   // 火曜日が周期予定
+                        bool isDaysOfWeekWednesday = (mask & OlDaysOfWeek.olWednesday) > 0 ? true : false; // 水曜日が周期予定
+                        bool isDaysOfWeekThursday  = (mask & OlDaysOfWeek.olThursday) > 0 ? true : false;  // 木曜日が周期予定
+                        bool isDaysOfWeekFriday    = (mask & OlDaysOfWeek.olFriday) > 0 ? true : false;    // 金曜日が周期予定
+                        bool isDaysOfWeekSaturday  = (mask & OlDaysOfWeek.olSaturday) > 0 ? true : false;  // 土曜日が周期予定
+
+                        if ( (mask & OlDaysOfWeek.olSunday) > 0 )
+                        {
+                            sb.Append("[複][周期予定 : 日曜日] ");
+                            sb.Append(" [" + oAppoint.Subject + "]");
+                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append("\r\n");
+                            textBox1.Text += sb.ToString();
+                            scheduleList.Add(oAppoint);
+                        }
+
+                        if ((mask & OlDaysOfWeek.olMonday) > 0)
+                        {
+                            sb.Append("[複][周期予定 : 月曜日] ");
+                            sb.Append(" [" + oAppoint.Subject + "]");
+                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append("\r\n");
+                            textBox1.Text += sb.ToString();
+                            scheduleList.Add(oAppoint);
+                        }
+
+                        if ((mask & OlDaysOfWeek.olTuesday) > 0)
+                        {
+                            sb.Append("[複][周期予定 : 火曜日] ");
+                            sb.Append(" [" + oAppoint.Subject + "]");
+                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append("\r\n");
+                            textBox1.Text += sb.ToString();
+                            scheduleList.Add(oAppoint);
+                        }
+
+                        if ((mask & OlDaysOfWeek.olWednesday) > 0)
+                        {
+                            sb.Append("[複][周期予定 : 水曜日] ");
+                            sb.Append(" [" + oAppoint.Subject + "]");
+                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append("\r\n");
+                            textBox1.Text += sb.ToString();
+                            scheduleList.Add(oAppoint);
+                        }
+
+                        if ((mask & OlDaysOfWeek.olThursday) > 0)
+                        {
+                            sb.Append("[複][周期予定 : 木曜日] ");
+                            sb.Append(" [" + oAppoint.Subject + "]");
+                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append("\r\n");
+                            textBox1.Text += sb.ToString();
+                            scheduleList.Add(oAppoint);
+                        }
+
+                        if ((mask & OlDaysOfWeek.olFriday) > 0)
+                        {
+                            sb.Append("[複][周期予定 : 金曜日] ");
+                            sb.Append(" [" + oAppoint.Subject + "]");
+                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append("\r\n");
+                            textBox1.Text += sb.ToString();
+                            scheduleList.Add(oAppoint);
+                        }
+
+                        if ((mask & OlDaysOfWeek.olSaturday) > 0)
+                        {
+                            sb.Append("[複][周期予定 : 土曜日] ");
+                            sb.Append(" [" + oAppoint.Subject + "]");
+                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append("\r\n");
+                            textBox1.Text += sb.ToString();
+                            scheduleList.Add(oAppoint);
+                        }
+                    }
                 }
                 else
                 {
@@ -309,6 +408,8 @@ namespace Outlook_Sample
                 TimeSpan tim = t.Definition.Settings.DeleteExpiredTaskAfter;
                 t.Definition.Settings.DeleteExpiredTaskAfter = new TimeSpan(0, 0, 1, 0);
 
+                // 以下のサイトを確認すること
+                // http://dynabook.com/assistpc/faq/pcdata/007771.htm
                 // Gets or sets a Boolean value that indicates that the task will not be started if the computer is running on battery power.
                 t.Definition.Settings.DisallowStartIfOnBatteries = false;
 
