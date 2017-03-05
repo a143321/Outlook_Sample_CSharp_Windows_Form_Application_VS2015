@@ -14,7 +14,7 @@ namespace Outlook_Sample
 {
     public partial class Form1 : Form
     {
-        List<AppointmentItem> scheduleList = new List<AppointmentItem>();
+        List<Schedule> scheduleList = new List<Schedule>();
 
         DateTime meetingTime;     // 会議開始時刻
         DateTime alarmTime;       // アラーム発生時刻
@@ -78,10 +78,6 @@ namespace Outlook_Sample
                         pattern.RecurrenceType == OlRecurrenceType.olRecursMonthNth ||
                         pattern.RecurrenceType == OlRecurrenceType.olRecursYearNth) {
 
-                        DayOfWeek nowWeekDay = today.DayOfWeek; // 予定の日付の曜日
-
-                        OlDaysOfWeek mask = pattern.DayOfWeekMask;
-
                         // どの曜日の周期予定かチェックする
                         // Sunday    = 00000001(1)
                         // Monday    = 00000010(2)
@@ -90,89 +86,229 @@ namespace Outlook_Sample
                         // Thursday  = 00010000(16)
                         // Friday    = 00100000(32)
                         // Saturday  = 01000000(64)
-                        bool isDaysOfWeekSunday    = (mask & OlDaysOfWeek.olSunday) > 0 ? true : false;    // 日曜日が周期予定
-                        bool isDaysOfWeekMonday    = (mask & OlDaysOfWeek.olMonday) > 0 ? true : false;    // 月曜日が周期予定
-                        bool isDaysOfWeekTuesday   = (mask & OlDaysOfWeek.olTuesday) > 0 ? true : false;   // 火曜日が周期予定
-                        bool isDaysOfWeekWednesday = (mask & OlDaysOfWeek.olWednesday) > 0 ? true : false; // 水曜日が周期予定
-                        bool isDaysOfWeekThursday  = (mask & OlDaysOfWeek.olThursday) > 0 ? true : false;  // 木曜日が周期予定
-                        bool isDaysOfWeekFriday    = (mask & OlDaysOfWeek.olFriday) > 0 ? true : false;    // 金曜日が周期予定
-                        bool isDaysOfWeekSaturday  = (mask & OlDaysOfWeek.olSaturday) > 0 ? true : false;  // 土曜日が周期予定
+
+                        //public enum DayOfWeek
+                        //{
+                        //    Friday = 5,
+                        //    Monday = 1,
+                        //    Saturday = 6,
+                        //    Sunday = 0,
+                        //    Thursday = 4,
+                        //    Tuesday = 2,
+                        //    Wednesday = 3
+                        //}
+
+                        OlDaysOfWeek mask = pattern.DayOfWeekMask;
+                        DateTime startRecurrence;
+                        DateTime endRecurrence;
+                        DayOfWeek dayOfWeekRecurrence;
+                        TimeSpan diffTodayAppointStartDay; // 今日と繰り返し予定スタート差分を求める
+                        int diffDayOfWeek;      // 周期予定の曜日と今日の曜日の差分を求める
+                        int diffDay;            // 周期予定日と現在日時の差分を求める
+                        Schedule schedule;
 
                         if ( (mask & OlDaysOfWeek.olSunday) > 0 )
                         {
-                            sb.Append("[複][周期予定 : 日曜日] ");
+                            if (oAppoint.Start < today)  // 周期予定開始日が現在より古かったら
+                            {
+                                sb.Append("[単] ");
+                                diffDayOfWeek = System.Math.Abs(today.DayOfWeek - DayOfWeek.Sunday);
+                                diffTodayAppointStartDay = today - oAppoint.Start;
+                                diffDay = diffTodayAppointStartDay.Days + diffDayOfWeek + 1;
+                                startRecurrence = oAppoint.Start.AddDays(diffDay);
+                                endRecurrence = oAppoint.End.AddDays(diffDay);
+                                dayOfWeekRecurrence = DayOfWeek.Sunday;
+                            }
+                            else
+                            {
+                                sb.Append("[複] ");
+                                startRecurrence = oAppoint.Start;
+                                endRecurrence = oAppoint.End;
+                                dayOfWeekRecurrence = DayOfWeek.Sunday;
+                            }
+                            sb.Append("[複] ");
                             sb.Append(" [" + oAppoint.Subject + "]");
-                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + startRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + endRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [周期曜日 : 日曜日]");
                             sb.Append("\r\n");
                             textBox1.Text += sb.ToString();
-                            scheduleList.Add(oAppoint);
+
+                            schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            scheduleList.Add(schedule);
                         }
 
                         if ((mask & OlDaysOfWeek.olMonday) > 0)
                         {
-                            sb.Append("[複][周期予定 : 月曜日] ");
+                            if (oAppoint.Start < today)  // 周期予定開始日が現在より古かったら
+                            {
+                                sb.Append("[単] ");
+                                diffDayOfWeek = System.Math.Abs(today.DayOfWeek - DayOfWeek.Monday);
+                                diffTodayAppointStartDay = today - oAppoint.Start;
+                                diffDay = diffTodayAppointStartDay.Days + diffDayOfWeek + 1;
+                                startRecurrence = oAppoint.Start.AddDays(diffDay);
+                                endRecurrence = oAppoint.End.AddDays(diffDay);
+                                dayOfWeekRecurrence = DayOfWeek.Monday;
+                                schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            }
+                            else
+                            {
+                                sb.Append("[複] ");
+                                startRecurrence = oAppoint.Start;
+                                endRecurrence = oAppoint.End;
+                                dayOfWeekRecurrence = DayOfWeek.Monday;
+                                schedule = new Schedule(oAppoint.Subject, oAppoint.Start, oAppoint.End, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            }
                             sb.Append(" [" + oAppoint.Subject + "]");
-                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + startRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + endRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
                             sb.Append("\r\n");
                             textBox1.Text += sb.ToString();
-                            scheduleList.Add(oAppoint);
+                            schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            scheduleList.Add(schedule);
                         }
 
                         if ((mask & OlDaysOfWeek.olTuesday) > 0)
                         {
-                            sb.Append("[複][周期予定 : 火曜日] ");
+                            if (oAppoint.Start < today)  // 周期予定開始日が現在より古かったら
+                            {
+                                sb.Append("[単] ");
+                                diffDayOfWeek = System.Math.Abs(today.DayOfWeek - DayOfWeek.Tuesday);
+                                diffTodayAppointStartDay = today - oAppoint.Start;
+                                diffDay = diffTodayAppointStartDay.Days + diffDayOfWeek + 1;
+                                startRecurrence = oAppoint.Start.AddDays(diffDay);
+                                endRecurrence = oAppoint.End.AddDays(diffDay);
+                                dayOfWeekRecurrence = DayOfWeek.Tuesday;
+                            }
+                            else
+                            {
+                                sb.Append("[複] ");
+                                startRecurrence = oAppoint.Start;
+                                endRecurrence = oAppoint.End;
+                                dayOfWeekRecurrence = DayOfWeek.Tuesday;
+                            }
                             sb.Append(" [" + oAppoint.Subject + "]");
-                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + startRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + endRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
                             sb.Append("\r\n");
                             textBox1.Text += sb.ToString();
-                            scheduleList.Add(oAppoint);
+                            schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            scheduleList.Add(schedule);
                         }
 
                         if ((mask & OlDaysOfWeek.olWednesday) > 0)
                         {
-                            sb.Append("[複][周期予定 : 水曜日] ");
+                            if (oAppoint.Start < today)  // 周期予定開始日が現在より古かったら
+                            {
+                                sb.Append("[単] ");
+                                diffDayOfWeek = System.Math.Abs(today.DayOfWeek - DayOfWeek.Wednesday);
+                                diffTodayAppointStartDay = today - oAppoint.Start;
+                                diffDay = diffTodayAppointStartDay.Days + diffDayOfWeek + 1;
+                                startRecurrence = oAppoint.Start.AddDays(diffDay);
+                                endRecurrence = oAppoint.End.AddDays(diffDay);
+                                dayOfWeekRecurrence = DayOfWeek.Wednesday;
+                            }
+                            else
+                            {
+                                sb.Append("[複] ");
+                                startRecurrence = oAppoint.Start;
+                                endRecurrence = oAppoint.End;
+                                dayOfWeekRecurrence = DayOfWeek.Wednesday;
+                            }
                             sb.Append(" [" + oAppoint.Subject + "]");
-                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + startRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + endRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
                             sb.Append("\r\n");
                             textBox1.Text += sb.ToString();
-                            scheduleList.Add(oAppoint);
+                            schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            scheduleList.Add(schedule);
                         }
 
                         if ((mask & OlDaysOfWeek.olThursday) > 0)
                         {
-                            sb.Append("[複][周期予定 : 木曜日] ");
+                            if (oAppoint.Start < today)  // 周期予定開始日が現在より古かったら
+                            {
+                                sb.Append("[単] ");
+                                diffDayOfWeek = System.Math.Abs(today.DayOfWeek - DayOfWeek.Thursday);
+                                diffTodayAppointStartDay = today - oAppoint.Start;
+                                diffDay = diffTodayAppointStartDay.Days + diffDayOfWeek + 1;
+                                startRecurrence = oAppoint.Start.AddDays(diffDay);
+                                endRecurrence = oAppoint.End.AddDays(diffDay);
+                                dayOfWeekRecurrence = DayOfWeek.Thursday;
+                            }
+                            else
+                            {
+                                sb.Append("[複] ");
+                                startRecurrence = oAppoint.Start;
+                                endRecurrence = oAppoint.End;
+                                dayOfWeekRecurrence = DayOfWeek.Thursday;
+                            }
                             sb.Append(" [" + oAppoint.Subject + "]");
-                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + startRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + endRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
                             sb.Append("\r\n");
                             textBox1.Text += sb.ToString();
-                            scheduleList.Add(oAppoint);
+                            schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            scheduleList.Add(schedule);
                         }
 
                         if ((mask & OlDaysOfWeek.olFriday) > 0)
                         {
-                            sb.Append("[複][周期予定 : 金曜日] ");
+                            if (oAppoint.Start < today)  // 周期予定開始日が現在より古かったら
+                            {
+                                sb.Append("[単] ");
+                                diffDayOfWeek = System.Math.Abs(today.DayOfWeek - DayOfWeek.Friday);
+                                diffTodayAppointStartDay = today - oAppoint.Start;
+                                diffDay = diffTodayAppointStartDay.Days + diffDayOfWeek + 1;
+                                startRecurrence = oAppoint.Start.AddDays(diffDay);
+                                endRecurrence = oAppoint.End.AddDays(diffDay);
+                                dayOfWeekRecurrence = DayOfWeek.Friday;
+                            }
+                            else
+                            {
+                                sb.Append("[複] ");
+                                startRecurrence = oAppoint.Start;
+                                endRecurrence = oAppoint.End;
+                                dayOfWeekRecurrence = DayOfWeek.Friday;
+                            }
                             sb.Append(" [" + oAppoint.Subject + "]");
-                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + startRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + endRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
                             sb.Append("\r\n");
                             textBox1.Text += sb.ToString();
-                            scheduleList.Add(oAppoint);
+                            schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            scheduleList.Add(schedule);
                         }
 
                         if ((mask & OlDaysOfWeek.olSaturday) > 0)
                         {
-                            sb.Append("[複][周期予定 : 土曜日] ");
+
+                            if (oAppoint.Start < today)  // 周期予定開始日が現在より古かったら
+                            {
+                                sb.Append("[単] ");
+                                diffDayOfWeek = System.Math.Abs(today.DayOfWeek - DayOfWeek.Saturday);
+                                diffTodayAppointStartDay = today - oAppoint.Start;
+                                diffDay = diffTodayAppointStartDay.Days + diffDayOfWeek + 1;
+                                startRecurrence = oAppoint.Start.AddDays(diffDay);
+                                endRecurrence = oAppoint.End.AddDays(diffDay);
+                                dayOfWeekRecurrence = DayOfWeek.Saturday;
+                                schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            }
+                            else
+                            {
+                                sb.Append("[複] ");
+                                startRecurrence = oAppoint.Start;
+                                endRecurrence = oAppoint.End;
+                                dayOfWeekRecurrence = DayOfWeek.Saturday;
+                                schedule = new Schedule(oAppoint.Subject, oAppoint.Start, oAppoint.End, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            }
                             sb.Append(" [" + oAppoint.Subject + "]");
-                            sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
-                            sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + startRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                            sb.Append(" [" + endRecurrence.ToString("yyyy/MM/dd hh:mm:ss") + "]");
                             sb.Append("\r\n");
                             textBox1.Text += sb.ToString();
-                            scheduleList.Add(oAppoint);
+                            schedule = new Schedule(oAppoint.Subject, startRecurrence, endRecurrence, oAppoint.IsRecurring, dayOfWeekRecurrence);
+                            scheduleList.Add(schedule);
                         }
                     }
                 }
@@ -182,10 +318,12 @@ namespace Outlook_Sample
                     sb.Append(" [" + oAppoint.Subject + "]");
                     sb.Append(" [" + oAppoint.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]");
                     sb.Append(" [" + oAppoint.End.ToString("yyyy/MM/dd hh:mm:ss") + "]");
+                    sb.Append(" [周期曜日 : 日曜日]");
                     sb.Append("\r\n");
 
                     textBox1.Text += sb.ToString();
-                    scheduleList.Add(oAppoint);
+                    Schedule schedule = new Schedule(oAppoint.Subject, oAppoint.Start, oAppoint.End, oAppoint.IsRecurring, oAppoint.Start.DayOfWeek);
+                    scheduleList.Add(schedule);
                 }
 
                 oAppoint = calendarItemsRestricted.GetNext();
@@ -202,7 +340,7 @@ namespace Outlook_Sample
             {
                 string isRecurringState;
 
-                if (item.IsRecurring)
+                if (item.isRecurring)
                 {
                     isRecurringState = "[複] ";
                 }
@@ -211,7 +349,7 @@ namespace Outlook_Sample
                     isRecurringState = "[単] ";
                 }
 
-                comboBoxItemAppointment.Items.Add(isRecurringState + item.Subject + " " + item.Start.ToString("yyyy/MM/dd hh:mm:ss"));
+                comboBoxItemAppointment.Items.Add(isRecurringState + item.subject + " " + item.start.ToString("yyyy/MM/dd hh:mm:ss"));
             }
         }
 
@@ -245,18 +383,20 @@ namespace Outlook_Sample
             if (comboBoxItemAppointment.SelectedIndex != -1)
             {
                 int listIndex = 0;
+                int infoDayofWeekRecurrence = -1;
 
                 foreach (var list in scheduleList){
 
-                    if ( (list.Start > System.DateTime.Now.Add(diffAleartTime)) && comboBoxItemAppointment.SelectedIndex == listIndex)
+                    if ( (list.start > System.DateTime.Now.Add(diffAleartTime)) && comboBoxItemAppointment.SelectedIndex == listIndex)
                     {
                         btnTimerStart.Enabled = true;
 
                         string isRecurringState;
 
-                        if (list.IsRecurring)
+                        if (list.isRecurring)
                         {
                             isRecurringState = "[複]";
+                            infoDayofWeekRecurrence = (int)list.dayofWeekRecurrence;
                         }
                         else
                         {
@@ -265,12 +405,16 @@ namespace Outlook_Sample
 
                         textBoxSelectedAppointment.Text = 
                             isRecurringState +
-                            " [" + list.Subject + "]" +
-                            " [" + list.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]" +
-                            " [" + list.End.ToString("yyyy/MM/dd hh:mm:ss") + "]"; 
+                            " [" + list.subject + "]" +
+                            " [" + list.start.ToString("yyyy/MM/dd hh:mm:ss") + "]" +
+                            " [" + list.end.ToString("yyyy/MM/dd hh:mm:ss") + "]"; 
 
-                        meetingTimeTextBox.Text = list.End.ToString("yyyy/MM/dd hh:mm:ss");
-                        meetingTime = list.Start;
+                        if(infoDayofWeekRecurrence != -1)
+                        {
+                            textBoxSelectedAppointment.Text += "[" + infoDayofWeekRecurrence.ToString() + "]";
+                        }
+                        meetingTimeTextBox.Text = list.end.ToString("yyyy/MM/dd hh:mm:ss");
+                        meetingTime = list.start;
                     }
                     listIndex++;
                 }
