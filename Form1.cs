@@ -120,6 +120,28 @@ namespace Outlook_Sample
         private void comboBoxItemAppointment_SelectedIndexChanged(object sender, EventArgs e)
         {
             btnTimerStart.Enabled = false;
+            TimeSpan diffAleartTime;
+
+            // 指定したグループ内のラジオボタンでチェックされている物を取り出す
+            var RadioButtonChecked_InGroup = groupBox1.Controls.OfType<RadioButton>()
+                .SingleOrDefault(rb => rb.Checked == true);
+
+            if (RadioButtonChecked_InGroup.Text == "5分前に通知")
+            {
+                // アラーム開始時間を会議開始時間の5分前にする
+                diffAleartTime = new TimeSpan(0, 5, 0);
+            }
+            else if (RadioButtonChecked_InGroup.Text == "10分前に通知")
+            {
+                // アラーム開始時間を会議開始時間の10分前にする
+                diffAleartTime = new TimeSpan(0, 10, 0);
+            }
+            else
+            {
+                // アラーム開始時間を会議開始時間の15分前にする
+                diffAleartTime = new TimeSpan(0, 15, 0);
+            }
+
 
             if (comboBoxItemAppointment.SelectedIndex != -1)
             {
@@ -127,7 +149,7 @@ namespace Outlook_Sample
 
                 foreach (var list in scheduleList){
 
-                    if (list.Start > System.DateTime.Now && comboBoxItemAppointment.SelectedIndex == listIndex)
+                    if ( (list.Start > System.DateTime.Now.Add(diffAleartTime)) && comboBoxItemAppointment.SelectedIndex == listIndex)
                     {
                         btnTimerStart.Enabled = true;
 
@@ -146,7 +168,7 @@ namespace Outlook_Sample
                             isRecurringState +
                             " [" + list.Subject + "]" +
                             " [" + list.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]" +
-                            " [" + list.Start.ToString("yyyy/MM/dd hh:mm:ss") + "]"; 
+                            " [" + list.End.ToString("yyyy/MM/dd hh:mm:ss") + "]"; 
 
                         meetingTimeTextBox.Text = list.End.ToString("yyyy/MM/dd hh:mm:ss");
                         meetingTime = list.Start;
@@ -261,14 +283,40 @@ namespace Outlook_Sample
         {
             using (TaskService ts = new TaskService())
             {
+                string path = taskName;
+
+                TimeTrigger triger = new TimeTrigger
+                {
+                    // For scripting, gets or sets the date and time when the trigger is activated.
+                    StartBoundary = triggerTime,
+
+                    // For scripting, gets or sets the date and time when the trigger is deactivated. The trigger cannot start the task after it is deactivated.
+                    EndBoundary = triggerTime.AddHours(1),
+
+                    // Gets or sets the amount of time that is allowed to complete the task. By default, a task will be stopped 72 hours after it starts to run. You can change this by changing this setting.
+                    ExecutionTimeLimit = new TimeSpan(0, 0, 30, 0),
+
+                    Enabled = true
+                };
+
+                ExecAction action = new ExecAction(directory + notifyExeName, null, null);
+
                 // Create a new task
-                Task t = ts.AddTask(taskName,
-                    new TimeTrigger()
-                    {
-                        StartBoundary = triggerTime,
-                        Enabled = true
-                    },
-                    new ExecAction(directory + notifyExeName, null, null));
+                Task t = ts.AddTask(path, triger, action);
+
+                // ITaskSettings::DeleteExpiredTaskAfter
+                // 再実行がスケジュールされていない場合に削除されるまでの時間(期間)
+                TimeSpan tim = t.Definition.Settings.DeleteExpiredTaskAfter;
+                t.Definition.Settings.DeleteExpiredTaskAfter = new TimeSpan(0, 0, 1, 0);
+
+                // Gets or sets a Boolean value that indicates that the task will not be started if the computer is running on battery power.
+                t.Definition.Settings.DisallowStartIfOnBatteries = false;
+
+                // Gets or sets a Boolean value that indicates that the task will be stopped if the computer begins to run on battery power.
+                t.Definition.Settings.StopIfGoingOnBatteries = false;
+
+                // システムがプロセスに関連付ける優先順位を示します。 
+                t.Definition.Settings.Priority = (System.Diagnostics.ProcessPriorityClass)1;
 
                 // Register the task in the root folder
                 ts.RootFolder.RegisterTaskDefinition(taskName, t.Definition);
