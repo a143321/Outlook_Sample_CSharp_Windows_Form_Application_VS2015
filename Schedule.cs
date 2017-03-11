@@ -13,17 +13,17 @@ namespace Outlook_Sample
         public DateTime start;
         public DateTime end;
         public bool isRecurring;
-        public DayOfWeek dayofWeekRecurrence;   // 周期曜日
+        public DayOfWeek dayofWeek;   // 周期曜日
 
 
         // ↓これがコンストラクター
-        public Schedule(string subject, DateTime start, DateTime end, bool isRecurring, DayOfWeek dayofWeekRecurrence)
+        public Schedule(string subject, DateTime start, DateTime end, bool isRecurring, DayOfWeek dayofWeek)
         {
             this.subject = subject;
             this.start = start;
             this.end = end;
             this.isRecurring = isRecurring;
-            this.dayofWeekRecurrence = dayofWeekRecurrence;
+            this.dayofWeek = dayofWeek;
         }
     }
 }
